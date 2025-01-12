@@ -3,3 +3,4 @@ torch
 torchvision
 comet_ml
 pillow
+comet-mpm
