@@ -4,14 +4,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 from PIL import Image
-import comet_ml
 from comet_ml import Experiment
+from comet_mpm import CometMPM
 
 # Set up the CometML experiment
 experiment = Experiment(
-    api_key="your_cometml_api_key",
+    api_key="RWC95UjWTrqmQkKHRShk0eqsT",
     project_name="digit-classification",
-    workspace="your_workspace_name"
+    workspace="rakeshhg"
+)
+
+# Set up MPM integration for logging predictions and input features
+mpm = CometMPM(
+    workspace_name="your_workspace_name",
+    model_name="digit-classification-cnn",
+    model_version="1.0.0",
+    api_key="your_cometml_api_key"
 )
 
 # Define the CNN model class
@@ -107,6 +115,14 @@ if uploaded_file is not None:
 
     # Log the prediction result
     experiment.log_metric("predicted_digit", prediction)
+
+    # Send data to MPM for logging
+    mpm.log_event(
+        prediction_id=str(uploaded_file.name),  # Unique ID for prediction
+        input_features={"image_size": image.size, "image_type": uploaded_file.type},  # Add relevant features
+        output_features={"predicted_digit": prediction},
+        labels={"true_digit": 0}  # Set to the true label if available, or leave out
+    )
 
     # Display the prediction
     st.write(f"Predicted Digit: {prediction}")
