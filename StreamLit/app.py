@@ -6,6 +6,7 @@ from torchvision import transforms
 from PIL import Image
 from comet_ml import Experiment
 from comet_mpm import CometMPM
+import os  # Added for handling file paths
 
 # Set up the CometML experiment
 experiment = Experiment(
@@ -51,9 +52,13 @@ class Net(nn.Module):
 def load_model(weights_path):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = Net().to(device)
-    model.load_state_dict(torch.load(weights_path, map_location=device))
-    model.eval()
-    return model
+    try:
+        model.load_state_dict(torch.load(weights_path, map_location=device))
+        model.eval()
+        return model
+    except FileNotFoundError:
+        st.error(f"Model file not found at path: {weights_path}")
+        st.stop()  # Stop the execution of the app
 
 # Preprocess the uploaded image
 def preprocess_image(image):
@@ -80,6 +85,9 @@ def predict(model, image_tensor):
 st.title("Digit Classification with CNN")
 st.write("Upload an image of a handwritten digit (0-9), and the model will classify it.")
 
+# Get the absolute path of the script's directory
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
 # File uploader
 uploaded_file = st.file_uploader("Choose an image file", type=["jpg", "jpeg", "png"])
 
@@ -99,7 +107,8 @@ if uploaded_file is not None:
     st.write("Processing the image...")
 
     # Load the model
-    model = load_model("mnist_cnn_model.pth")
+    model_path = os.path.join(script_dir, "mnist_cnn_model.pth")
+    model = load_model(model_path)
 
     # Log the model loading
     experiment.log_text("Model loaded successfully.")
@@ -132,3 +141,4 @@ if uploaded_file is not None:
 
     # Log additional metrics and information as needed
     experiment.log_text(f"Prediction completed for the image with predicted digit: {prediction}")
+    experiment.end()
